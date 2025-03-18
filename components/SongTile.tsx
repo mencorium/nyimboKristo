@@ -32,12 +32,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     height: 60,
-    backgroundColor: '#444',
+    backgroundColor: '#333',
     justifyContent: 'flex-start',
     alignItems: 'center',
     paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#555', // Slightly lighter than the background for better visibility
+    borderRadius: 5,
+    marginVertical: 5,
   },
   pressed: {
     backgroundColor: '#555', // Highlight the tile when pressed

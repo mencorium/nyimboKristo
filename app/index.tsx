@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     marginTop: Platform.OS === "android" ? Constants.statusBarHeight : 0,
     flex: 1,
     backgroundColor: "#1e1b26", // Darker shade for better contrast
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
   },
   noResultsContainer: {
     flex: 1,

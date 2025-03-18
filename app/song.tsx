@@ -15,19 +15,25 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import mapSongsToImages from "@/utils/songMapper";
 import NavSongBar from "@/components/navSongBar";
 import Constants from "expo-constants"; // Added missing import
+import PitchPipe from "@/components/PitchPipe";
 
 const { width, height } = Dimensions.get("window");
 
 const MusicSheetScreen = () => {
-  const { name } = useLocalSearchParams();
+  const { name} = useLocalSearchParams();
   const router = useRouter();
   const [songPath, setSongPath] = useState<string>("");
+  const [songKey, setSongKey] = useState<string>("");
+  const [flatKey, setFlatkey] = useState<boolean>(false);
 
   useEffect(() => {
     const imageMapper = mapSongsToImages();
     const matchedSong = imageMapper.find((item) => item.songName === name);
     if (matchedSong) {
       setSongPath(matchedSong.path);
+      setSongKey(matchedSong.songKey? matchedSong.songKey : "C");
+      setFlatkey(matchedSong.flat)
+      console.log(matchedSong)
     }
   }, [name]);
 
@@ -75,6 +81,8 @@ const MusicSheetScreen = () => {
     ],
   }));
 
+  console.log(songKey);
+
   return (
     <View style={styles.mainContainer}>
       <NavSongBar onPressBackArrow={() => router.back()} />
@@ -95,6 +103,7 @@ const MusicSheetScreen = () => {
           </GestureDetector>
         </View>
       </GestureHandlerRootView>
+      <PitchPipe songTitle={name as string} songKey={ songKey } flatKey={ flatKey }/>
     </View>
   );
 };
