@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, useWindowDimensions, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import getPipeColor from '@/utils/getPipeColor';
@@ -36,6 +36,13 @@ const PitchPipe: React.FC<PitchPipeProps> = ({ songTitle, songKey, flatKey }) =>
     transform: [{ scale: scale.value }],
   }));
 
+  // Function to trigger haptic feedback based on platform
+  const triggerHapticFeedback = useCallback(() => {
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, []);
+
   // Play sound
   const playPitchSound = useCallback(async () => {
     if (!pitchPipePath) return;
@@ -44,8 +51,8 @@ const PitchPipe: React.FC<PitchPipeProps> = ({ songTitle, songKey, flatKey }) =>
       setIsLoading(true);
       setError(null);
 
-      // Haptic feedback
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // Haptic feedback (Only for iOS & Android)
+      triggerHapticFeedback();
 
       // Animate button press
       scale.value = withTiming(0.9, { duration: 100 }, () => {
@@ -62,7 +69,7 @@ const PitchPipe: React.FC<PitchPipeProps> = ({ songTitle, songKey, flatKey }) =>
     } finally {
       setIsLoading(false);
     }
-  }, [pitchPipePath]);
+  }, [pitchPipePath, triggerHapticFeedback]);
 
   // Cleanup the sound on component unmount
   useEffect(() => {
