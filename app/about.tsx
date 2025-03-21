@@ -55,7 +55,7 @@ const About = React.memo(() => {
 
   // Shared value for scroll position
   const scrollY = useSharedValue(0);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<Animated.ScrollView>(null); // Updated ref type
 
   // Scroll handler
   const scrollHandler = useAnimatedScrollHandler({
@@ -166,7 +166,7 @@ const About = React.memo(() => {
 
       {/* Scrollable Content */}
       <Animated.ScrollView
-        ref={scrollViewRef}
+        ref={scrollViewRef} // Updated ref type
         contentContainerStyle={styles.scrollContent}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
