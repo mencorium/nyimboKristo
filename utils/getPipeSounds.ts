@@ -23,6 +23,18 @@ const keySounds = [
     require('@/assets/pianonotes/B.mp3'),
 ];
 
+/****************************************************
+ * This Function return the dictionary with below structure
+ * 
+ * type pipeSounds = {
+ *  keyname: string;
+ *  path: any;
+ * keyId: number;
+ *};
+ * 
+ * the structure is used as primary source of keynote 
+ * sound used in getPipeSounds function
+****************************************************/
 const pipeSoundDictionary = (): pipeSounds[] => {
     return keyNames.map((keyname, index) => ({
         keyname,
@@ -31,6 +43,13 @@ const pipeSoundDictionary = (): pipeSounds[] => {
     }));
 };
 
+
+
+/**********************************************************************
+ * This function return the correct path of particular keynote sound.
+ * It accept two parameter key and flat, these are name of the key note 
+ * and state to show if keynote has flat symbol or not 
+ * *********************************************************************/
 const getPipeSounds = (key: string, flat: boolean) => {
     const pitchpipe = pipeSoundDictionary();
     const correctName = flat ? `${key}b` : key; // Fix incorrect append usage

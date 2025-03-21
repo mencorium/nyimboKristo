@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useRef, useMemo, useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -8,14 +8,27 @@ import {
   TouchableOpacity,
   Linking,
   Platform,
-  Animated,
-  Easing
+  RefreshControl,
+  Dimensions,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { StatusBar } from "expo-status-bar";
 import Constants from "expo-constants";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  useAnimatedScrollHandler,
+  interpolate,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
+import { Feather } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import EmailForm from "@/components/EmailForm";
 
+const { width } = Dimensions.get("window");
+
+// Utility function to handle link press
 const handleLinkPress = async (url: string, errorMessage: string) => {
   try {
     const supported = await Linking.canOpenURL(url);
@@ -29,106 +42,225 @@ const handleLinkPress = async (url: string, errorMessage: string) => {
   }
 };
 
-export default function About() {
-  const email = 'mwalyambijoel@gmail.com';
-  const subject = 'Any Suggestions about the app';
-  const body = 'Hello, I have an inquiry about...';
-  const formUrl = 'https://forms.gle/your-google-form-link';
+const About = React.memo(() => {
+  const email = "mwalyambijoel@gmail.com";
+  const subject = "Any Suggestions about the app";
+  const body = "Hello, I have an inquiry about...";
+  const formUrl = "https://forms.gle/your-google-form-link";
 
-  const emailUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const emailUrl = useMemo(
+    () => `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+    [email, subject, body]
+  );
 
-  // Animation for scrolling effect
-  const fadeAnim = useState(new Animated.Value(0))[0];
+  // Shared value for scroll position
+  const scrollY = useSharedValue(0);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 800,
-      easing: Easing.ease,
-      useNativeDriver: true
-    }).start();
-  }, [fadeAnim]);
+  // Scroll handler
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  // Animated styles for profile image
+  const profileImageStyle = useAnimatedStyle(() => {
+    const size = withTiming(
+      interpolate(scrollY.value, [0, 100], [120, 60], {
+        extrapolateRight: "clamp",
+      }),
+      { duration: 200, easing: Easing.ease }
+    );
+    const borderWidth = withTiming(
+      interpolate(scrollY.value, [0, 100], [3, 1], {
+        extrapolateRight: "clamp",
+      }),
+      { duration: 200, easing: Easing.ease }
+    );
+    return {
+      width: size,
+      height: size,
+      borderWidth,
+    };
+  });
+
+  // Animated styles for title
+  const titleStyle = useAnimatedStyle(() => {
+    const fontSize = withTiming(
+      interpolate(scrollY.value, [0, 100], [32, 18], {
+        extrapolateRight: "clamp",
+      }),
+      { duration: 200, easing: Easing.ease }
+    );
+    return {
+      fontSize,
+    };
+  });
+
+  // Animated styles for subtitle
+  const subtitleStyle = useAnimatedStyle(() => {
+    const fontSize = withTiming(
+      interpolate(scrollY.value, [0, 100], [18, 14], {
+        extrapolateRight: "clamp",
+      }),
+      { duration: 200, easing: Easing.ease }
+    );
+    return {
+      fontSize,
+    };
+  });
+
+  // Animated styles for profile container padding
+  const profileContainerStyle = useAnimatedStyle(() => {
+    const paddingVertical = withTiming(
+      interpolate(scrollY.value, [0, 100], [20, 10], {
+        extrapolateRight: "clamp",
+      }),
+      { duration: 200, easing: Easing.ease }
+    );
+    const paddingHorizontal = withTiming(
+      interpolate(scrollY.value, [0, 100], [20, 10], {
+        extrapolateRight: "clamp",
+      }),
+      { duration: 200, easing: Easing.ease }
+    );
+    return {
+      paddingVertical,
+      paddingHorizontal,
+    };
+  });
+
+  // Scroll-to-top function
+  const scrollToTop = useCallback(() => {
+    scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); // Haptic feedback
+  }, []);
+
+  // Pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 2000); // Simulate refresh
+  }, []);
 
   return (
     <LinearGradient colors={["#121212", "#1E1E1E"]} style={styles.container}>
       <StatusBar style="light" />
-      <ScrollView contentContainerStyle={styles.content}>
-        {/* Profile and Title Section */}
-        <Animated.View style={[styles.profileContainer, { opacity: fadeAnim }]}>
-          <Image source={require("@/assets/images/me.jpg")} style={styles.profileImage} />
-          <View style={styles.textContainer}>
-            <Text style={styles.title}>Mwalyambi, Joel I</Text>
-            <Text style={styles.subtitle}>Tech Enthusiast | Music Visionary</Text>
-          </View>
-        </Animated.View>
 
+      {/* Fixed Profile Section */}
+      <Animated.View style={[styles.profileContainer, profileContainerStyle]}>
+        <Animated.Image
+          source={require("@/assets/images/me.jpg")}
+          style={[styles.profileImage, profileImageStyle]}
+        />
+        <View style={styles.textContainer}>
+          <Animated.Text style={[styles.title, titleStyle]}>
+            Mwalyambi, Joel I
+          </Animated.Text>
+          <Animated.Text style={[styles.subtitle, subtitleStyle]}>
+            Tech Enthusiast | Music Visionary
+          </Animated.Text>
+        </View>
+      </Animated.View>
+
+      {/* Scrollable Content */}
+      <Animated.ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.scrollContent}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
         {/* Details Section */}
-        <Animated.View style={[styles.detailsContainer, { opacity: fadeAnim }]}>
+        <View style={styles.detailsContainer}>
           <Text style={styles.aboutText}>
-            Mwalyambi, Joel I, a visionary developer and music artist, is the driving force behind several innovative projects spanning mobile development, 
-            database optimization, and embedded systems. With expertise in React Native, Expo, and SQLite, he creates seamless digital experiences, 
-            from intuitive mobile and desktop interfaces to Arduino-powered automation solutions. His dedication to efficiency and reliability ensures that his work is both cutting-edge and impactful.
+            Mwalyambi, Joel I, a visionary developer and music artist, is the
+            driving force behind several innovative projects spanning mobile
+            development, database optimization, and embedded systems. With
+            expertise in React Native, Expo, and SQLite, he creates seamless
+            digital experiences, from intuitive mobile and desktop interfaces to
+            Arduino-powered automation solutions. His dedication to efficiency
+            and reliability ensures that his work is both cutting-edge and
+            impactful.
           </Text>
           <Text style={styles.aboutText}>
-            Beyond technology, Joel is deeply involved in music composition and arrangement, blending logic with artistry to craft expressive melodies. 
-            His passion extends to exploring human behavior in vehicle communication systems, pushing the boundaries of innovation. 
-            Whether developing software, structuring databases, or composing music, he strives to merge creativity with technical excellence, shaping solutions that resonate in both the digital and artistic realms.
+            Beyond technology, Joel is deeply involved in music composition and
+            arrangement, blending logic with artistry to craft expressive
+            melodies. His passion extends to exploring human behavior in vehicle
+            communication systems, pushing the boundaries of innovation. Whether
+            developing software, structuring databases, or composing music, he
+            strives to merge creativity with technical excellence, shaping
+            solutions that resonate in both the digital and artistic realms.
           </Text>
-        </Animated.View>
+        </View>
 
         {/* Inquiry Section */}
-        <Animated.View style={[styles.inquiryContainer, { opacity: fadeAnim }]}>
-          <Text style={styles.inquiryText}>Have any Suggestions? Reach out to me:</Text>
-          <TouchableOpacity 
-            onPress={() => handleLinkPress(emailUrl, 'Email client is not supported on this device.')} 
+        <View style={styles.inquiryContainer}>
+          <Text style={styles.inquiryText}>
+            Have any Suggestions? Reach out to me:
+          </Text>
+          <TouchableOpacity
+            onPress={() => {
+              handleLinkPress(
+                emailUrl,
+                "Email client is not supported on this device."
+              );
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); // Haptic feedback
+            }}
             style={styles.inquiryButton}
           >
             <Text style={styles.inquiryButtonText}>Send Email Inquiry</Text>
           </TouchableOpacity>
           {/* <EmailForm receiverEmail={email}/> */}
-
-        </Animated.View>
+        </View>
 
         {/* Inspirational Quote */}
-        <Animated.View style={[styles.inspirationalContainer, { opacity: fadeAnim }]}>
+        <View style={styles.inspirationalContainer}>
           <Text style={styles.inspirationalText}>
-            "Without guidance from the Divine Master Creator, innovation and creativity will either be empty words or a disaster for humanity."
+            "Without guidance from the Divine Master Creator, innovation and
+            creativity will either be empty words or a disaster for humanity."
           </Text>
           <Text style={styles.signature}>— Mwalyambi Jr</Text>
-        </Animated.View>
+        </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.footerText}>© {new Date().getFullYear()} Mwalyambi Jr. All rights reserved.</Text>
+          <Text style={styles.footerText}>
+            © {new Date().getFullYear()} Mwalyambi Jr. All rights reserved.
+          </Text>
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      {/* Floating Action Button (Scroll-to-Top) */}
+      <TouchableOpacity
+        style={styles.floatingButton}
+        onPress={scrollToTop}
+      >
+        <Feather name="arrow-up" size={24} color="#fff" />
+      </TouchableOpacity>
     </LinearGradient>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: Platform.OS === "android" ? Constants.statusBarHeight : 0,
   },
-  content: {
-    paddingHorizontal: 20,
-    paddingVertical: 30,
-  },
   profileContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 30,
-    paddingVertical: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#444",
+    backgroundColor: "#121212",
+    zIndex: 1,
   },
   profileImage: {
-    width: 120,
-    height: 120,
     borderRadius: 60,
     borderColor: "#bbb",
-    borderWidth: 3,
     marginRight: 20,
   },
   textContainer: {
@@ -136,15 +268,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   title: {
-    fontSize: 32,
     color: "#fff",
     fontWeight: "bold",
     marginBottom: 5,
   },
   subtitle: {
-    fontSize: 18,
     color: "#ccc",
     fontStyle: "italic",
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 120,
   },
   detailsContainer: {
     backgroundColor: "#1E1E1E",
@@ -182,7 +316,6 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     borderRadius: 5,
     alignItems: "center",
-    transform: [{ scale: 1 }],
   },
   inquiryButtonText: {
     color: "#fff",
@@ -215,4 +348,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#888",
   },
+  floatingButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "#4CAF50",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 5,
+  },
 });
+
+export default About;
